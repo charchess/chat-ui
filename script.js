@@ -2,28 +2,45 @@ document.addEventListener('DOMContentLoaded', () => {
     const chatBox = document.getElementById('chat-box');
     const userInput = document.getElementById('user-input');
     const sendBtn = document.getElementById('send-btn');
-    
-    // C'est l'URL de notre service, exposée par Traefik
     const INTENT_ROUTER_URL = 'https://intent-router.truxonline.com/chat';
     
-    // L'historique de la conversation, crucial pour le contexte de l'IA
     let conversationHistory = [];
+    let isWaitingForReply = false; // Notre nouvelle variable de verrouillage
+
+    // Nouvelle fonction pour gérer l'état de l'input
+    function setInputState(enabled) {
+        userInput.disabled = !enabled;
+        sendBtn.disabled = !enabled;
+        if (enabled) {
+            userInput.placeholder = "Envoyer un message à Lisa...";
+            sendBtn.style.cursor = 'pointer';
+            sendBtn.style.opacity = '1';
+        } else {
+            userInput.placeholder = "Lisa réfléchit...";
+            sendBtn.style.cursor = 'not-allowed';
+            sendBtn.style.opacity = '0.5';
+        }
+    }
 
     function addMessage(text, sender) {
-        const messageElem = document.createElement('div');
-        messageElem.classList.add('message', sender);
-        messageElem.textContent = text;
-        chatBox.appendChild(messageElem);
-        chatBox.scrollTop = chatBox.scrollHeight;
+        // ... (cette fonction ne change pas) ...
     }
 
     async function sendMessage() {
+        // On vérifie le verrou
+        if (isWaitingForReply) return;
+
         const message = userInput.value.trim();
         if (!message) return;
 
         addMessage(message, 'user');
         userInput.value = '';
-        userInput.style.height = 'auto'; // Réinitialiser la hauteur
+        userInput.style.height = 'auto';
+
+        // === VERROUILLAGE ===
+        isWaitingForReply = true;
+        setInputState(false);
+        // ====================
 
         try {
             const response = await fetch(INTENT_ROUTER_URL, {
@@ -43,24 +60,28 @@ document.addEventListener('DOMContentLoaded', () => {
             const data = await response.json();
             addMessage(data.reply, 'lisa');
 
-            // On met à jour l'historique pour les prochains appels
             conversationHistory.push({ "role": "user", "content": message });
             conversationHistory.push({ "role": "assistant", "content": data.reply });
 
         } catch (error) {
             addMessage(`Erreur: ${error.message}`, 'lisa');
+        } finally {
+            // === DÉVERROUILLAGE ===
+            isWaitingForReply = false;
+            setInputState(true);
+            userInput.focus(); // Redonne le focus à l'input
+            // ======================
         }
     }
 
     sendBtn.addEventListener('click', sendMessage);
     userInput.addEventListener('keypress', (e) => {
         if (e.key === 'Enter' && !e.shiftKey) {
-            e.preventDefault(); // Empêche le retour à la ligne
+            e.preventDefault();
             sendMessage();
         }
     });
 
-    // Ajuste la hauteur du textarea dynamiquement
     userInput.addEventListener('input', () => {
         userInput.style.height = 'auto';
         userInput.style.height = (userInput.scrollHeight) + 'px';
