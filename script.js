@@ -1,16 +1,43 @@
-
 document.addEventListener('DOMContentLoaded', () => {
-    // ... (les premières lignes avec les const ne changent pas) ...
+    // --- Éléments du DOM ---
     const chatBox = document.getElementById('chat-box');
     const userInput = document.getElementById('user-input');
     const sendBtn = document.getElementById('send-btn');
+    
+    // --- Configuration ---
     const INTENT_ROUTER_URL = 'https://intent-router.truxonline.com/chat';
+    
+    // --- État de l'application ---
     let conversationHistory = [];
     let isWaitingForReply = false;
-    
-    // ... (setInputState et addMessage ne changent pas) ...
 
-    async function sendMessage() {
+    // ========================================================================
+    // DÉFINITION DE TOUTES LES FONCTIONS
+    // ========================================================================
+
+    const addMessage = (text, sender) => {
+        const messageElem = document.createElement('div');
+        messageElem.classList.add('message', sender);
+        messageElem.textContent = text;
+        chatBox.appendChild(messageElem);
+        chatBox.scrollTop = chatBox.scrollHeight;
+    };
+
+    const setInputState = (enabled) => {
+        userInput.disabled = !enabled;
+        sendBtn.disabled = !enabled;
+        if (enabled) {
+            userInput.placeholder = "Envoyer un message à Lisa...";
+            sendBtn.style.cursor = 'pointer';
+            sendBtn.style.opacity = '1';
+        } else {
+            userInput.placeholder = "Lisa réfléchit...";
+            sendBtn.style.cursor = 'not-allowed';
+            sendBtn.style.opacity = '0.5';
+        }
+    };
+
+    const sendMessage = async () => {
         if (isWaitingForReply) return;
         const message = userInput.value.trim();
         if (!message) return;
@@ -27,27 +54,19 @@ document.addEventListener('DOMContentLoaded', () => {
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ message: message, history: conversationHistory })
             });
-            
-            console.log("Réponse brute du serveur:", response); // LOG DE DÉBOGAGE
 
             if (!response.ok) {
-                const errorText = await response.text();
-                throw new Error(`Erreur du serveur (${response.status}): ${errorText}`);
+                const errorData = await response.json();
+                throw new Error(errorData.detail?.error || 'Erreur inconnue du serveur.');
             }
 
-            // On vérifie si la réponse a un contenu avant de la parser
-            const responseText = await response.text();
-            const data = responseText ? JSON.parse(responseText) : null;
+            const data = await response.json();
             
-            console.log("Données JSON parsées:", data); // LOG DE DÉBOGAGE
-
-            // On vérifie que les données et la propriété 'reply' existent
             if (data && data.reply) {
                 addMessage(data.reply, 'lisa');
                 conversationHistory.push({ "role": "user", "content": message });
                 conversationHistory.push({ "role": "assistant", "content": data.reply });
             } else {
-                // Si la réponse est valide mais ne contient pas ce qu'on attend
                 throw new Error("La réponse du serveur est dans un format inattendu.");
             }
 
@@ -59,8 +78,14 @@ document.addEventListener('DOMContentLoaded', () => {
             setInputState(true);
             userInput.focus();
         }
-    }
+    };
+
+    // ========================================================================
+    // MISE EN PLACE DES ÉCOUTEURS D'ÉVÉNEMENTS
+    // ========================================================================
+
     sendBtn.addEventListener('click', sendMessage);
+
     userInput.addEventListener('keypress', (e) => {
         if (e.key === 'Enter' && !e.shiftKey) {
             e.preventDefault();
@@ -70,6 +95,9 @@ document.addEventListener('DOMContentLoaded', () => {
 
     userInput.addEventListener('input', () => {
         userInput.style.height = 'auto';
-        userInput.style.height = (userInput.scrollHeight) + 'px';
+        userInput.style.height = `${userInput.scrollHeight}px`;
     });
+
+    // Message de bienvenue
+    addMessage("Bonjour, mon Roi. Je suis prête.", 'lisa');
 });
