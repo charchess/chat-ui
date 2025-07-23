@@ -9,6 +9,7 @@ document.addEventListener('DOMContentLoaded', () => {
     
     // --- État de l'application ---
     let isWaitingForReply = false;
+    let session_id = null; // Nouvelle variable pour stocker l'ID de session
 
     // ========================================================================
     // DÉFINITION DE TOUTES LES FONCTIONS
@@ -48,11 +49,16 @@ document.addEventListener('DOMContentLoaded', () => {
         setInputState(false);
 
         try {
+            const payload = { message: message };
+            if (session_id) {
+                payload.session_id = session_id; // On envoie l'ID si on l'a
+            }
+
             const response = await fetch(INTENT_ROUTER_URL, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ message: message }) 
-           });
+                body: JSON.stringify(payload)
+            });
 
             if (!response.ok) {
                 const errorData = await response.json();
@@ -63,6 +69,7 @@ document.addEventListener('DOMContentLoaded', () => {
             
             if (data && data.reply) {
                 addMessage(data.reply, 'lisa');
+                session_id = data.session_id; // On met à jour l'ID de session avec celui renvoyé par le serveur
             } else {
                 throw new Error("La réponse du serveur est dans un format inattendu.");
             }
