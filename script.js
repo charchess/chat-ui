@@ -5,7 +5,7 @@ document.addEventListener('DOMContentLoaded', () => {
     const sendBtn = document.getElementById('send-btn');
     
     // --- Configuration ---
-    const INTENT_ROUTER_URL = 'https://intent-router.truxonline.com/chat';
+    const INTENT_ROUTER_URL = 'http://intent-router/chat';
     
     // --- État de l'application ---
     let isWaitingForReply = false;
