@@ -8,7 +8,6 @@ document.addEventListener('DOMContentLoaded', () => {
     const INTENT_ROUTER_URL = 'https://intent-router.truxonline.com/chat';
     
     // --- État de l'application ---
-    let conversationHistory = [];
     let isWaitingForReply = false;
 
     // ========================================================================
@@ -52,8 +51,8 @@ document.addEventListener('DOMContentLoaded', () => {
             const response = await fetch(INTENT_ROUTER_URL, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ message: message, history: conversationHistory })
-            });
+                body: JSON.stringify({ message: message }) 
+           });
 
             if (!response.ok) {
                 const errorData = await response.json();
@@ -64,8 +63,6 @@ document.addEventListener('DOMContentLoaded', () => {
             
             if (data && data.reply) {
                 addMessage(data.reply, 'lisa');
-                conversationHistory.push({ "role": "user", "content": message });
-                conversationHistory.push({ "role": "assistant", "content": data.reply });
             } else {
                 throw new Error("La réponse du serveur est dans un format inattendu.");
             }
