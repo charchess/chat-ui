@@ -5,7 +5,7 @@ document.addEventListener('DOMContentLoaded', () => {
     const sendBtn = document.getElementById('send-btn');
     
     // --- Configuration ---
-    const INTENT_ROUTER_URL = 'http://intent-router:8002/chat';
+    const INTENT_ROUTER_URL = '/chat';
     
     // --- État de l'application ---
     let isWaitingForReply = false;
